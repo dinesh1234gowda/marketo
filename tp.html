@@ -4,6 +4,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://www.contentstack.com/sdks/contentstack-ui-extensions/dist/latest/ui-extension-sdk.js"></script>
+<link href="https://www.contentstack.com/sdks/contentstack-ui-extensions/dist/latest/ui-extension-sdk.css" rel="stylesheet" type="text/css" media="all">
 <style>
 .custom-select {
   left:0px;
@@ -15,72 +17,80 @@
   height:35px;
   margin-bottom:10px;
 }
-
-.warning-data
+option
+{
+	font-family:Arial;
+}
+.msg
 {
 	color:green;
+}
+.warning-data
+{
+	color:red;
     display:none;
 }
 .warning-fetch
 {
+	color: red;
 	color:red;
     display:none;
 }
 </style>
 
-<script src="https://www.contentstack.com/sdks/contentstack-ui-extensions/dist/latest/ui-extension-sdk.js"></script>
-
 </head>
 <body>
-<select  class="custom-select" id="marketo-form" onchange="display()">
-<option value="-1" disabled>Select..</option>
+<select class="custom-select" id="marketo-form" onchange="display()">
+<option value="0" id="0">Select..</option>
 </select>
-<br>
-<div style="{color:green,font-family:arial}">please select the desired marketo forms for this content</div>
+
+<div class="msg">please select the desired marketo forms for this content</div>
 <div class="warning-data" id="warning-data">The forms you have selected no longer exists in marketo</div>
 <div class="warning-fetch" id="warning-fetch">Error fetching data</div>
-<br>
+
+
 
 <script type="text/javascript">
 
- var extensionField;
-
-ContentstackUIExtension.init().then(function(extension) {
-         
+var extensionField;
         
-        extensionField = extension;
-        console.log(extensionField);
-	
-});	
+       
+        ContentstackUIExtension.init().then(function(extension) {
+            extensionField = extension;
 
+			kick();			
+        })
+    
 
-console.log(extensionField);
-
-
-var proxy="https://ui-extension.herokuapp.com";//extensionField.config.proxy
-var clientid="b2b2c206-d00d-45b9-9fca-58730573a67e";//extensionField.config.clientid
-var clientsecret="32eGn1Vtp4QKesexeELdImr9uwQ2yTGS";//extensionField.config.clientsecret
-//var munchkinid=extensionField.config.munchkinid;
-
-var url=proxy+'/'+'https://617-XVG-270.mktorest.com/identity/oauth/token?grant_type=client_credentials&client_id='+clientid+'&client_secret='+clientsecret;
 
 var forms=[];
+var proxy,clientid,mun,clientsecret;
+function kick()
+{
+		proxy=extensionField.config.proxy;
+		clientid=extensionField.config.clientid;
+		clientsecret=extensionField.config.clientsecret;
+		mun=extensionField.config.munchkinid;
 
+		var url=proxy+'/'+'https://'+mun+'.mktorest.com/identity/oauth/token?grant_type=client_credentials&client_id='+clientid+'&client_secret='+clientsecret;
+		
 gettoken(url)
   .then(data=>{
-  	console.log(data);
+  	
     callapi(data.access_token).then((result)=>render(result)).catch((error)=>
     	console.error(error))
     }
   	)
   .catch(err=>console.error(err));
+}
+
 
 function render(response)
 {
 	forms=response.result;
 	
 
-	console.log(forms);
+	
 	
 	extensionField.window.updateHeight();
 	extensionField.window.enableAutoResizing();
@@ -88,54 +98,50 @@ function render(response)
 
 	var selected=document.getElementById("marketo-form");
 
-	
-
 	forms.forEach(function(value,index)
 	{
-		console.log(value);
-		console.log(index);
 		var option=document.createElement("option");
 		
 
 
 		option.id=value.id;
-		console.log(value.id);
+		
 
 		option.setAttribute("value",index);
+	
 		option.innerText=value.name;
 		selected.append(option);
+
 	})
 
-
-	if(extensionField.field.getData())
-	{
-	
-	var value=extensionField.field.getData();
-
-	var index=forms.findIndex(function(form)
-	{
-		return form.id ===value;
-	});
-
-	
-		if(index <0)
+		if(extensionField.field.getData())
 		{
+			value=extensionField.field.getData();
+			var index=forms.findIndex(function(form)
+			{
+			return form.id ===value;
+			});
 
-		document.getElementById("warning-data").style.display="block";
-		}
-		else
-		{
-			selected.selectedIndex=index;
+			if(index<0)
+			{
+				document.getElementById("warning-data").style.display="block";
+			}
+			else
+			{
+				selected.selectedIndex=index+1;
+			}
+
 
 		}
-	
-	}
+
+}
+
 
 
 function callapi(token)
 {
-	var apiurl=proxy+'/'+'https://617-XVG-270.mktorest.com/rest/asset/v1/forms.json?access_token='+token+'&folder=629';
-	console.log(apiurl);
+	var apiurl=proxy+'/'+'https://'+mun+'.mktorest.com/rest/asset/v1/forms.json?access_token='+token+'&folder=629';
+
 	return fetch(apiurl,{
 		method:"GET"
 	})
@@ -144,25 +150,30 @@ function callapi(token)
 }
 
 function gettoken(url) {
-  // Default options are marked with *
+  
     return fetch(url, {
         method: "GET" 
     })
-    .then(response => response.json()) // parses response to JSON
+    .then(response => response.json()) 
 }
+
 
 function display()
 {
+
+
 	var x=document.getElementById('marketo-form');
 	var i=x.selectedIndex;
 	var idd=x.options[i].id;
 
-	extensionField.field.setData(idd).then(()=>{}).catch(()=>{});
+
+	
+	extensionField.field.setData(idd).then(()=>{}).catch(()=>{})
+
+
 }
 
 </script> 
-
-
 
 </body>
 </html>
